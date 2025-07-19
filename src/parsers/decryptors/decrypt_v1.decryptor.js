@@ -66,15 +66,36 @@ export async function decryptSources_v1(epID, id, name, type) {
         rawSourceData.intro = fallback_data.intro ?? null;
         rawSourceData.outro = fallback_data.outro ?? null;
       } catch (fallbackError) {
-        throw new Error("Fallback failed: " + fallbackError.message);
+        throw new Error("Fallback failed: " + fallbackError);
       }
     }
+
+    const rawLink = decryptedSources?.[0]?.file ?? ""; const headers = {};
+    
+   
+if (rawLink.includes("tubeplx")) {
+      headers.Referer = "https://vidwish.live/";
+    } else if (rawLink.includes("dotstream")) {
+      headers.Referer = "https://megaplay.buzz/";
+    }
+
+    headers["User-Agent"] =
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/114.0.0.0 Safari/537.36";
+
+    const PROXY_BASE = "https://proxy-app-65pgd.ondigitalocean.app";
+    // const PROXY_BASE = "http://127.0.0.1:8080";
+    const proxyLink = `${PROXY_BASE}/m3u8-proxy?url=${encodeURIComponent(
+      rawLink
+    )}&headers=${encodeURIComponent(JSON.stringify(headers))}`;  
+    
+    console.log({rawLink, proxyLink});
+    
 
     return {
       id,
       type,
       link: {
-        file: decryptedSources?.[0]?.file ?? "",
+        file: proxyLink,
         type: "hls",
       },
       tracks: rawSourceData.tracks ?? [],
