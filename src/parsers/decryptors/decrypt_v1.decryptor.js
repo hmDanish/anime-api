@@ -82,7 +82,8 @@ if (rawLink.includes("tubeplx")) {
     headers["User-Agent"] =
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/114.0.0.0 Safari/537.36";
 
-    const PROXY_BASE = "https://proxy-app-65pgd.ondigitalocean.app";
+    const PROXY_BASE = "http://64.23.163.208:8080";
+    // const PROXY_BASE = "https://proxy-app-65pgd.ondigitalocean.app";
     // const PROXY_BASE = "http://127.0.0.1:8080";
     const proxyLink = `${PROXY_BASE}/m3u8-proxy?url=${encodeURIComponent(
       rawLink
