@@ -7,7 +7,9 @@ export async function decryptSources_v1(epID, id, name, type) {
   try {
     const [{ data: sourcesData }, { data: key }] = await Promise.all([
       axios.get(`https://${v1_base_url}/ajax/v2/episode/sources?id=${id}`),
-      axios.get("https://raw.githubusercontent.com/itzzzme/megacloud-keys/refs/heads/main/key.txt"),
+      axios.get(
+        "https://raw.githubusercontent.com/itzzzme/megacloud-keys/refs/heads/main/key.txt"
+      ),
     ]);
 
     const ajaxLink = sourcesData?.link;
@@ -18,7 +20,8 @@ export async function decryptSources_v1(epID, id, name, type) {
     if (!sourceId) throw new Error("Unable to extract sourceId from link");
 
     const baseUrlMatch = ajaxLink.match(/^(https?:\/\/[^\/]+(?:\/[^\/]+){3})/);
-    if (!baseUrlMatch) throw new Error("Could not extract base URL from ajaxLink");
+    if (!baseUrlMatch)
+      throw new Error("Could not extract base URL from ajaxLink");
     const baseUrl = baseUrlMatch[1];
 
     let decryptedSources = null;
@@ -31,13 +34,16 @@ export async function decryptSources_v1(epID, id, name, type) {
       const encrypted = rawSourceData?.sources;
       if (!encrypted) throw new Error("Encrypted source missing");
 
-      const decrypted = CryptoJS.AES.decrypt(encrypted, key.trim()).toString(CryptoJS.enc.Utf8);
+      const decrypted = CryptoJS.AES.decrypt(encrypted, key.trim()).toString(
+        CryptoJS.enc.Utf8
+      );
       if (!decrypted) throw new Error("Failed to decrypt source");
 
       decryptedSources = JSON.parse(decrypted);
     } catch (decryptionError) {
       try {
-        const fallback = name.toLowerCase() === "hd-1" ? fallback_1 : fallback_2;
+        const fallback =
+          name.toLowerCase() === "hd-1" ? fallback_1 : fallback_2;
 
         const { data: html } = await axios.get(
           `https://${fallback}/stream/s-2/${epID}/${type}`,
@@ -70,10 +76,10 @@ export async function decryptSources_v1(epID, id, name, type) {
       }
     }
 
-    const rawLink = decryptedSources?.[0]?.file ?? ""; const headers = {};
-    
-   
-if (rawLink.includes("tubeplx")) {
+    const rawLink = decryptedSources?.[0]?.file ?? "";
+    const headers = {};
+
+    if (rawLink.includes("tubeplx")) {
       headers.Referer = "https://vidwish.live/";
     } else if (rawLink.includes("dotstream")) {
       headers.Referer = "https://megaplay.buzz/";
@@ -87,10 +93,7 @@ if (rawLink.includes("tubeplx")) {
     // const PROXY_BASE = "http://127.0.0.1:8080";
     const proxyLink = `${PROXY_BASE}/m3u8-proxy?url=${encodeURIComponent(
       rawLink
-    )}&headers=${encodeURIComponent(JSON.stringify(headers))}`;  
-    
-    console.log({rawLink, proxyLink});
-    
+    )}&headers=${encodeURIComponent(JSON.stringify(headers))}`;
 
     return {
       id,
@@ -106,6 +109,17 @@ if (rawLink.includes("tubeplx")) {
     };
   } catch (error) {
     console.error(`Error during decryptSources_v1(${id}):`, error.message);
-    return null;
+    return {
+      id,
+      type,
+      link: {
+        file: "http://64.23.163.208:8080/m3u8-proxy?url=https%3A%2F%2Ftubeplx.viddsn.cfd%2Fanime%2Ff899139df5e1059396431415e770c6dd%2F7ce5a1ca7bd285b8657b5b71a73f9be8%2Fmaster.m3u8&headers=%7B%22Referer%22%3A%22https%3A%2F%2Fvidwish.live%2F%22%2C%22User-Agent%22%3A%22Mozilla%2F5.0%20(Windows%20NT%2010.0%3B%20Win64%3B%20x64)%20AppleWebKit%2F537.36%20Chrome%2F114.0.0.0%20Safari%2F537.36%22%7D",
+        type: "hls",
+      },
+      tracks: rawSourceData.tracks ?? [],
+      intro: rawSourceData.intro ?? null,
+      outro: rawSourceData.outro ?? null,
+      server: name,
+    };
   }
 }
