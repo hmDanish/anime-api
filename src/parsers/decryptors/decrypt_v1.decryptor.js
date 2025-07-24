@@ -1,8 +1,8 @@
 import axios from "axios";
 import CryptoJS from "crypto-js";
+import extractToken from "../../helper/token.helper.js";
 import { v1_base_url } from "../../utils/base_v1.js";
 import { fallback_1, fallback_2 } from "../../utils/fallback.js";
-import extractToken from "../../helper/token.helper.js";
 
 export async function decryptSources_v1(epID, id, name, type) {
   try {
@@ -29,13 +29,19 @@ export async function decryptSources_v1(epID, id, name, type) {
     let rawSourceData = {};
 
     try {
-      const token = await extractToken(`${baseUrl}/${sourceId}?k=1&autoPlay=0&oa=0&asi=1`);
-      const { data } = await axios.get(`${baseUrl}/getSources?id=${sourceId}&_k=${token}`);
+      const token = await extractToken(
+        `${baseUrl}/${sourceId}?k=1&autoPlay=0&oa=0&asi=1`
+      );
+      const { data } = await axios.get(
+        `${baseUrl}/getSources?id=${sourceId}&_k=${token}`
+      );
       rawSourceData = data;
       const encrypted = rawSourceData?.sources;
-      rawSourceData.iframe=`${baseUrl}/${sourceId}?k=1&autoPlay=0&oa=0&asi=1`;
+      rawSourceData.iframe = `${baseUrl}/${sourceId}?k=1&autoPlay=0&oa=0&asi=1`;
       if (!encrypted) throw new Error("Encrypted source missing");
-      const decrypted = CryptoJS.AES.decrypt(encrypted, key.trim()).toString(CryptoJS.enc.Utf8);
+      const decrypted = CryptoJS.AES.decrypt(encrypted, key.trim()).toString(
+        CryptoJS.enc.Utf8
+      );
       if (!decrypted) throw new Error("Failed to decrypt source");
       decryptedSources = JSON.parse(decrypted);
     } catch (decryptionError) {
@@ -51,7 +57,7 @@ export async function decryptSources_v1(epID, id, name, type) {
             },
           }
         );
-        rawSourceData.iframe=`https://${fallback}/stream/s-2/${epID}/${type}`;
+        rawSourceData.iframe = `https://${fallback}/stream/s-2/${epID}/${type}`;
         const dataIdMatch = html.match(/data-id=["'](\d+)["']/);
         const realId = dataIdMatch?.[1];
         if (!realId) throw new Error("Could not extract data-id for fallback");
@@ -81,23 +87,28 @@ export async function decryptSources_v1(epID, id, name, type) {
     }
 
     const rawLink = decryptedSources?.[0]?.file ?? "";
-    const headers = {};
 
-    if (rawLink.includes("tubeplx")) {
-      headers.Referer = "https://vidwish.live/";
-    } else if (rawLink.includes("dotstream")) {
-      headers.Referer = "https://megaplay.buzz/";
-    }
-
-    headers["User-Agent"] =
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/114.0.0.0 Safari/537.36";
-
+    // console.log("////////////////////////");
+    
     const PROXY_BASE = "http://64.23.163.208:8080";
     // const PROXY_BASE = "https://proxy-app-65pgd.ondigitalocean.app";
     // const PROXY_BASE = "http://127.0.0.1:8080";
-    const proxyLink = `${PROXY_BASE}/m3u8-proxy?url=${encodeURIComponent(
-      rawLink
-    )}&headers=${encodeURIComponent(JSON.stringify(headers))}`;
+
+    // const proxyLink = `${PROXY_BASE}/m3u8-proxy?url=${encodeURIComponent(
+    //   rawLink
+    // )}&headers=${encodeURIComponent(JSON.stringify(headers))}`;
+
+
+    const parsedUrl = new URL(rawLink);
+    
+    const hostname = parsedUrl.hostname; // "cdn.dotstream.buzz"
+    let cdnSlug = "default";
+    if (hostname.includes("dotstream")) cdnSlug = "dotstream";
+    else if (hostname.includes("tubeplx")) cdnSlug = "tubeplx";
+
+    const proxyLink = `${PROXY_BASE}/${cdnSlug}${parsedUrl.pathname}`;
+
+    console.log({ rawLink, proxyLink });
 
     return {
       id,
