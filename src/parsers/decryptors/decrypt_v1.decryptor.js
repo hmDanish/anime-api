@@ -2,6 +2,7 @@ import axios from "axios";
 import CryptoJS from "crypto-js";
 import { v1_base_url } from "../../utils/base_v1.js";
 import { fallback_1, fallback_2 } from "../../utils/fallback.js";
+import extractToken from "../../helper/token.helper.js";
 
 export async function decryptSources_v1(epID, id, name, type) {
   try {
@@ -28,17 +29,14 @@ export async function decryptSources_v1(epID, id, name, type) {
     let rawSourceData = {};
 
     try {
-      const { data } = await axios.get(`${baseUrl}/getSources?id=${sourceId}`);
+      const token = await extractToken(`${baseUrl}/${sourceId}?k=1&autoPlay=0&oa=0&asi=1`);
+      const { data } = await axios.get(`${baseUrl}/getSources?id=${sourceId}&_k=${token}`);
       rawSourceData = data;
-
       const encrypted = rawSourceData?.sources;
+      rawSourceData.iframe=`${baseUrl}/${sourceId}?k=1&autoPlay=0&oa=0&asi=1`;
       if (!encrypted) throw new Error("Encrypted source missing");
-
-      const decrypted = CryptoJS.AES.decrypt(encrypted, key.trim()).toString(
-        CryptoJS.enc.Utf8
-      );
+      const decrypted = CryptoJS.AES.decrypt(encrypted, key.trim()).toString(CryptoJS.enc.Utf8);
       if (!decrypted) throw new Error("Failed to decrypt source");
-
       decryptedSources = JSON.parse(decrypted);
     } catch (decryptionError) {
       try {
@@ -53,7 +51,7 @@ export async function decryptSources_v1(epID, id, name, type) {
             },
           }
         );
-
+        rawSourceData.iframe=`https://${fallback}/stream/s-2/${epID}/${type}`;
         const dataIdMatch = html.match(/data-id=["'](\d+)["']/);
         const realId = dataIdMatch?.[1];
         if (!realId) throw new Error("Could not extract data-id for fallback");
@@ -68,9 +66,15 @@ export async function decryptSources_v1(epID, id, name, type) {
         );
 
         decryptedSources = [{ file: fallback_data.sources.file }];
-        rawSourceData.tracks = fallback_data.tracks ?? [];
-        rawSourceData.intro = fallback_data.intro ?? null;
-        rawSourceData.outro = fallback_data.outro ?? null;
+        if (!rawSourceData.tracks || rawSourceData.tracks.length === 0) {
+          rawSourceData.tracks = fallback_data.tracks ?? [];
+        }
+        if (!rawSourceData.intro) {
+          rawSourceData.intro = fallback_data.intro ?? null;
+        }
+        if (!rawSourceData.outro) {
+          rawSourceData.outro = fallback_data.outro ?? null;
+        }
       } catch (fallbackError) {
         throw new Error("Fallback failed: " + fallbackError);
       }
@@ -105,6 +109,7 @@ export async function decryptSources_v1(epID, id, name, type) {
       tracks: rawSourceData.tracks ?? [],
       intro: rawSourceData.intro ?? null,
       outro: rawSourceData.outro ?? null,
+      iframe: rawSourceData.iframe,
       server: name,
     };
   } catch (error) {
