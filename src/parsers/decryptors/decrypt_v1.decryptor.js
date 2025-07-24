@@ -6,13 +6,13 @@ import { fallback_1, fallback_2 } from "../../utils/fallback.js";
 
 export async function decryptSources_v1(epID, id, name, type) {
   try {
-    const [{ data: sourcesData }, { data: key }] = await Promise.all([
-      axios.get(`https://${v1_base_url}/ajax/v2/episode/sources?id=${id}`),
-      axios.get(
-        "https://raw.githubusercontent.com/itzzzme/megacloud-keys/refs/heads/main/key.txt"
-      ),
-    ]);
-
+    // const [{ data: sourcesData }, { data: key }] = await Promise.all([
+    //   axios.get(`https://${v1_base_url}/ajax/v2/episode/sources?id=${id}`),
+    //   axios.get("https://raw.githubusercontent.com/itzzzme/megacloud-keys/refs/heads/main/key.txt"),
+    // ]);
+    const { data: sourcesData } = await axios.get(
+      `https://${v1_base_url}/ajax/v2/episode/sources?id=${id}`,
+    );
     const ajaxLink = sourcesData?.link;
     if (!ajaxLink) throw new Error("Missing link in sourcesData");
 
@@ -24,103 +24,23 @@ export async function decryptSources_v1(epID, id, name, type) {
     if (!baseUrlMatch)
       throw new Error("Could not extract base URL from ajaxLink");
     const baseUrl = baseUrlMatch[1];
+    const iframeURL = `${baseUrl}/${sourceId}?k=1&autoPlay=0&oa=0&asi=1`;
 
-    let decryptedSources = null;
-    let rawSourceData = {};
-
-    try {
-      const token = await extractToken(
-        `${baseUrl}/${sourceId}?k=1&autoPlay=0&oa=0&asi=1`
-      );
-      const { data } = await axios.get(
-        `${baseUrl}/getSources?id=${sourceId}&_k=${token}`
-      );
-      rawSourceData = data;
-      const encrypted = rawSourceData?.sources;
-      rawSourceData.iframe = `${baseUrl}/${sourceId}?k=1&autoPlay=0&oa=0&asi=1`;
-      if (!encrypted) throw new Error("Encrypted source missing");
-      const decrypted = CryptoJS.AES.decrypt(encrypted, key.trim()).toString(
-        CryptoJS.enc.Utf8
-      );
-      if (!decrypted) throw new Error("Failed to decrypt source");
-      decryptedSources = JSON.parse(decrypted);
-    } catch (decryptionError) {
-      try {
-        const fallback =
-          name.toLowerCase() === "hd-1" ? fallback_1 : fallback_2;
-
-        const { data: html } = await axios.get(
-          `https://${fallback}/stream/s-2/${epID}/${type}`,
-          {
-            headers: {
-              Referer: `https://${fallback_1}/`,
-            },
-          }
-        );
-        rawSourceData.iframe = `https://${fallback}/stream/s-2/${epID}/${type}`;
-        const dataIdMatch = html.match(/data-id=["'](\d+)["']/);
-        const realId = dataIdMatch?.[1];
-        if (!realId) throw new Error("Could not extract data-id for fallback");
-
-        const { data: fallback_data } = await axios.get(
-          `https://${fallback}/stream/getSources?id=${realId}`,
-          {
-            headers: {
-              "X-Requested-With": "XMLHttpRequest",
-            },
-          }
-        );
-
-        decryptedSources = [{ file: fallback_data.sources.file }];
-        if (!rawSourceData.tracks || rawSourceData.tracks.length === 0) {
-          rawSourceData.tracks = fallback_data.tracks ?? [];
-        }
-        if (!rawSourceData.intro) {
-          rawSourceData.intro = fallback_data.intro ?? null;
-        }
-        if (!rawSourceData.outro) {
-          rawSourceData.outro = fallback_data.outro ?? null;
-        }
-      } catch (fallbackError) {
-        throw new Error("Fallback failed: " + fallbackError);
-      }
-    }
-
-    const rawLink = decryptedSources?.[0]?.file ?? "";
-
-    // console.log("////////////////////////");
-    
-    const PROXY_BASE = "http://64.23.163.208:8080";
-    // const PROXY_BASE = "https://proxy-app-65pgd.ondigitalocean.app";
-    // const PROXY_BASE = "http://127.0.0.1:8080";
-
-    // const proxyLink = `${PROXY_BASE}/m3u8-proxy?url=${encodeURIComponent(
-    //   rawLink
-    // )}&headers=${encodeURIComponent(JSON.stringify(headers))}`;
-
-
-    const parsedUrl = new URL(rawLink);
-    
-    const hostname = parsedUrl.hostname; // "cdn.dotstream.buzz"
-    let cdnSlug = "default";
-    if (hostname.includes("dotstream")) cdnSlug = "dotstream";
-    else if (hostname.includes("tubeplx")) cdnSlug = "tubeplx";
-
-    const proxyLink = `${PROXY_BASE}/${cdnSlug}${parsedUrl.pathname}`;
-
-    console.log({ rawLink, proxyLink });
-
+    const { data: rawSourceData } = await axios.get(
+      `https://decrypt.zenime.site/extract?embed_url=${iframeURL}`,
+    );
+    const decryptedSources = rawSourceData.data;
     return {
       id,
       type,
       link: {
-        file: proxyLink,
+        file: decryptedSources?.sources[0]?.file ?? "",
         type: "hls",
       },
-      tracks: rawSourceData.tracks ?? [],
-      intro: rawSourceData.intro ?? null,
-      outro: rawSourceData.outro ?? null,
-      iframe: rawSourceData.iframe,
+      tracks: decryptedSources.tracks ?? [],
+      intro: decryptedSources.intro ?? null,
+      outro: decryptedSources.outro ?? null,
+      iframe: iframeURL,
       server: name,
     };
   } catch (error) {
