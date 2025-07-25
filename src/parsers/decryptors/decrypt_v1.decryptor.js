@@ -50,8 +50,12 @@ export async function decryptSources_v1(epID, id, name, type) {
         type: "hls",
       },
       tracks: decryptedSources.tracks ?? [],
-      intro: decryptedSources.intro ?? null,
-      outro: decryptedSources.outro ?? null,
+      intro: Array.isArray(decryptedSources.intro)
+        ? { start: decryptedSources.intro[0], end: decryptedSources.intro[1] }
+        : null,
+      outro: Array.isArray(decryptedSources.outro)
+        ? { start: decryptedSources.outro[0], end: decryptedSources.outro[1] }
+        : null,
       iframe: iframeURL,
       server: name,
     };
