@@ -1,8 +1,5 @@
 import axios from "axios";
-import CryptoJS from "crypto-js";
-import extractToken from "../../helper/token.helper.js";
 import { v1_base_url } from "../../utils/base_v1.js";
-import { fallback_1, fallback_2 } from "../../utils/fallback.js";
 
 export async function decryptSources_v1(epID, id, name, type) {
   try {
@@ -11,7 +8,7 @@ export async function decryptSources_v1(epID, id, name, type) {
     //   axios.get("https://raw.githubusercontent.com/itzzzme/megacloud-keys/refs/heads/main/key.txt"),
     // ]);
     const { data: sourcesData } = await axios.get(
-      `https://${v1_base_url}/ajax/v2/episode/sources?id=${id}`,
+      `https://${v1_base_url}/ajax/v2/episode/sources?id=${id}`
     );
     const ajaxLink = sourcesData?.link;
     if (!ajaxLink) throw new Error("Missing link in sourcesData");
@@ -27,14 +24,29 @@ export async function decryptSources_v1(epID, id, name, type) {
     const iframeURL = `${baseUrl}/${sourceId}?k=1&autoPlay=0&oa=0&asi=1`;
 
     const { data: rawSourceData } = await axios.get(
-      `https://decrypt.zenime.site/extract?embed_url=${iframeURL}`,
+      `https://decrypt.zenime.site/extract?embed_url=${iframeURL}`
     );
     const decryptedSources = rawSourceData.data;
+
+    const rawLink = decryptedSources?.sources[0]?.file ?? "";
+
+    const headers = {
+      Referer: "https://megacloud.blog/",
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36",
+    };
+
+    const PROXY_BASE = "http://64.23.163.208:8080";
+
+    const proxyLink = `${PROXY_BASE}/m3u8-proxy?url=${encodeURIComponent(
+      rawLink
+    )}&headers=${encodeURIComponent(JSON.stringify(headers))}`;
+
     return {
       id,
       type,
       link: {
-        file: decryptedSources?.sources[0]?.file ?? "",
+        file: proxyLink,
         type: "hls",
       },
       tracks: decryptedSources.tracks ?? [],
@@ -45,17 +57,6 @@ export async function decryptSources_v1(epID, id, name, type) {
     };
   } catch (error) {
     console.error(`Error during decryptSources_v1(${id}):`, error.message);
-    return {
-      id,
-      type,
-      link: {
-        file: "http://64.23.163.208:8080/m3u8-proxy?url=https%3A%2F%2Ftubeplx.viddsn.cfd%2Fanime%2Ff899139df5e1059396431415e770c6dd%2F7ce5a1ca7bd285b8657b5b71a73f9be8%2Fmaster.m3u8&headers=%7B%22Referer%22%3A%22https%3A%2F%2Fvidwish.live%2F%22%2C%22User-Agent%22%3A%22Mozilla%2F5.0%20(Windows%20NT%2010.0%3B%20Win64%3B%20x64)%20AppleWebKit%2F537.36%20Chrome%2F114.0.0.0%20Safari%2F537.36%22%7D",
-        type: "hls",
-      },
-      tracks: rawSourceData.tracks ?? [],
-      intro: rawSourceData.intro ?? null,
-      outro: rawSourceData.outro ?? null,
-      server: name,
-    };
+    return null;
   }
 }
