@@ -61,7 +61,7 @@ async function extractStreamingInfo(id, name, type) {
     return { streamingLink, servers };
   } catch (error) {
     console.error("An error occurred:", error);
-    return { streamingLink: [], servers: [] };
+    return { streamingLink: null, servers: [] };
   }
 }
 export { extractStreamingInfo };

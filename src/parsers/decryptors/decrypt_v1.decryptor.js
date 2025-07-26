@@ -5,32 +5,34 @@ export async function decryptSources_v1(epID, id, name, type) {
   let iframeURL = ""; // So we can log it even in the catch block
 
   try {
-    console.log(`🔍 Fetching sources for ID: ${id}`);
+    // console.log(`🔍 Fetching sources for ID: ${id}`);
     const { data: sourcesData } = await axios.get(
       `https://${v1_base_url}/ajax/v2/episode/sources?id=${id}`
     );
 
-    console.log("✅ sourcesData fetched:", sourcesData);
+    // console.log("✅ sourcesData fetched:", sourcesData);
 
     const ajaxLink = sourcesData?.link;
     if (!ajaxLink) throw new Error("❌ Missing link in sourcesData");
-    console.log("🔗 ajaxLink:", ajaxLink);
+    // console.log("🔗 ajaxLink:", ajaxLink);
 
     const sourceIdMatch = /\/([^/?]+)\?/.exec(ajaxLink);
     const sourceId = sourceIdMatch?.[1];
     if (!sourceId) throw new Error("❌ Unable to extract sourceId from link");
-    console.log("🧩 Extracted sourceId:", sourceId);
+    // console.log("🧩 Extracted sourceId:", sourceId);
 
     const baseUrlMatch = ajaxLink.match(/^(https?:\/\/[^\/]+(?:\/[^\/]+){3})/);
     if (!baseUrlMatch)
       throw new Error("❌ Could not extract base URL from ajaxLink");
     const baseUrl = baseUrlMatch[1];
-    console.log("🌐 Extracted baseUrl:", baseUrl);
+    // console.log("🌐 Extracted baseUrl:", baseUrl);
 
     iframeURL = `${baseUrl}/${sourceId}?k=1&autoPlay=0&oa=0&asi=1`;
-    console.log("🖼️ iframeURL:", iframeURL);
+    // console.log("🖼️ iframeURL:", iframeURL);
 
-    const decryptURL = `https://decrypt.zenime.site/extract?embed_url=${iframeURL}`;
+const decryptURL = `https://decrypt.zenime.site/extract?embed_url=${encodeURIComponent(
+  iframeURL
+    )}`;
     console.log("🔐 Calling decrypt API:", decryptURL);
 
     const decryptedSources = await fetchDecryptedDataWithRetry(decryptURL);
@@ -75,7 +77,7 @@ export async function decryptSources_v1(epID, id, name, type) {
     };
   } catch (error) {
     console.error(`❌ Error during decryptSources_v1(${id}):`, error.message);
-    console.log("📦 iframeURL at error time:", iframeURL);
+    // console.log("📦 iframeURL at error time:", iframeURL);
     return null;
   }
 }
