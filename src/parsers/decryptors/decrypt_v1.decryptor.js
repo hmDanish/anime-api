@@ -75,7 +75,7 @@ export async function decryptSources_v1(epID, id, name, type) {
 }
 
 
-async function fetchDecryptedDataWithRetry(url, retries = 3, delay = 1000) {
+async function fetchDecryptedDataWithRetry(url, retries = 3, delay = 3000) {
   for (let i = 0; i < retries; i++) {
     try {
       const { data: raw } = await axios.get(url);
