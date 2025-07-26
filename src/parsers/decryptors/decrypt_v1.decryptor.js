@@ -38,14 +38,14 @@ export async function decryptSources_v1(epID, id, name, type) {
     if (!rawLink)
       throw new Error("No HLS stream URL found in decrypted sources");
 
-
     const headers = {
       Referer: "https://megacloud.blog/",
       "User-Agent":
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36",
     };
 
-    const PROXY_BASE = "https://critics-isa-revenues-cowboy.trycloudflare.com";
+    // const PROXY_BASE = "https://critics-isa-revenues-cowboy.trycloudflare.com";
+    const PROXY_BASE = "64.23.163.208:8080";
 
     const proxyLink = `${PROXY_BASE}/m3u8-proxy?url=${encodeURIComponent(
       rawLink
@@ -64,12 +64,13 @@ export async function decryptSources_v1(epID, id, name, type) {
         : null,
       outro: Array.isArray(decryptedSources?.outro)
         ? { start: decryptedSources?.outro[0], end: decryptedSources?.outro[1] }
-        : null, 
+        : null,
       iframe: iframeURL,
       server: name,
     };
   } catch (error) {
     console.error(`Error during decryptSources_v1(${id}):`, error.message);
+    console.log(`iframeURL:`, iframeURL);
     return null;
   }
 }
