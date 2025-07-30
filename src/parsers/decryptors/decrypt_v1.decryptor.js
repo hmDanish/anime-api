@@ -51,12 +51,15 @@ const decryptURL = `https://decrypt.zenime.site/extract?embed_url=${encodeURICom
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36",
     };
 
-    // const PROXY_BASE = "http://64.23.163.208:8080"; // Add http:// or https:// here
-    const PROXY_BASE = "https://tssm3u8proxy.me"
+    const PROXY_BASE1 = "http://64.23.163.208:8080";
+    const PROXY_BASE2 = "https://tssm3u8proxy.me"
 
     // const PROXY_BASE = "http://127.0.0.1:8080";
 
-    const proxyLink = `${PROXY_BASE}/m3u8-proxy?url=${encodeURIComponent(
+    const proxyLink1 = `${PROXY_BASE1}/m3u8-proxy?url=${encodeURIComponent(
+      rawLink
+    )}`;
+    const proxyLink2 = `${PROXY_BASE2}/m3u8-proxy?url=${encodeURIComponent(
       rawLink
     )}`;
 
@@ -67,7 +70,8 @@ const decryptURL = `https://decrypt.zenime.site/extract?embed_url=${encodeURICom
       id,
       type,
       link: {
-        file: proxyLink,
+        file: proxyLink1,
+        file2: proxyLink2,
         type: "hls",
       },
       tracks: decryptedSources?.tracks ?? [],
