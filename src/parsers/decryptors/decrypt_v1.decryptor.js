@@ -53,9 +53,13 @@ const decryptURL = `https://decrypt.zenime.site/extract?embed_url=${encodeURICom
 
     // const PROXY_BASE = "http://64.23.163.208:8080"; // Add http:// or https:// here
     const PROXY_BASE = "https://tssm3u8proxy.me"
+
+    // const PROXY_BASE = "http://127.0.0.1:8080";
+
     const proxyLink = `${PROXY_BASE}/m3u8-proxy?url=${encodeURIComponent(
       rawLink
-    )}&headers=${encodeURIComponent(JSON.stringify(headers))}`;
+    )}`;
+
 
     // console.log("🚀 Final proxyLink:", proxyLink);
 
