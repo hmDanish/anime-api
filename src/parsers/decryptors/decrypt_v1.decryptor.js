@@ -33,11 +33,11 @@ export async function decryptSources_v1(epID, id, name, type) {
 const decryptURL = `https://decrypt.zenime.site/extract?embed_url=${encodeURIComponent(
   iframeURL
     )}`;
-    console.log("🔐 Calling decrypt API:", decryptURL);
+    // console.log("🔐 Calling decrypt API:", decryptURL);
 
     const decryptedSources = await fetchDecryptedDataWithRetry(decryptURL);
 
-    console.log("✅ decryptedSources received:", decryptedSources);
+    // console.log("✅ decryptedSources received:", decryptedSources);
 
     const rawLink = decryptedSources?.sources?.[0]?.file;
     if (!rawLink)
@@ -51,12 +51,13 @@ const decryptURL = `https://decrypt.zenime.site/extract?embed_url=${encodeURICom
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36",
     };
 
-    const PROXY_BASE = "http://64.23.163.208:8080"; // Add http:// or https:// here
+    // const PROXY_BASE = "http://64.23.163.208:8080"; // Add http:// or https:// here
+    const PROXY_BASE = "https://tssm3u8proxy.me"
     const proxyLink = `${PROXY_BASE}/m3u8-proxy?url=${encodeURIComponent(
       rawLink
     )}&headers=${encodeURIComponent(JSON.stringify(headers))}`;
 
-    console.log("🚀 Final proxyLink:", proxyLink);
+    // console.log("🚀 Final proxyLink:", proxyLink);
 
     return {
       id,
@@ -85,16 +86,16 @@ const decryptURL = `https://decrypt.zenime.site/extract?embed_url=${encodeURICom
 async function fetchDecryptedDataWithRetry(url, retries = 3, delay = 3000) {
   for (let i = 0; i < retries; i++) {
     try {
-      console.log(`🔁 Attempt ${i + 1} to fetch: ${url}`);
+      // console.log(`🔁 Attempt ${i + 1} to fetch: ${url}`);
       const { data: raw } = await axios.get(url);
       if (raw?.data) {
         console.log(`✅ Success on attempt ${i + 1}`);
         return raw.data;
       } else {
-        console.warn(`⚠️ Attempt ${i + 1} returned empty data`);
+        // console.warn(`⚠️ Attempt ${i + 1} returned empty data`);
       }
     } catch (err) {
-      console.warn(`❗ Retry ${i + 1}/${retries} failed:`, err.message);
+      // console.warn(`❗ Retry ${i + 1}/${retries} failed:`, err.message);
     }
     await new Promise((res) => setTimeout(res, delay));
   }
