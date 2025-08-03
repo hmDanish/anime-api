@@ -13,7 +13,7 @@ import {
   FILTER_SORT,
 } from "../routes/filter.maping.js";
 
-async function extractSearchResults(params = {}) {
+async function extractFilterResults(params = {}) {
   try {
     const normalizeParam = (param, mapping) => {
       if (!param) return undefined;
@@ -38,9 +38,9 @@ async function extractSearchResults(params = {}) {
     const sortParam = normalizeParam(params.sort, FILTER_SORT);
 
     let languageParam = params.language;
-    if (typeof languageParam === "string") {
-      languageParam = languageParam.trim().toUpperCase();
-      languageParam = FILTER_LANGUAGE_MAP[languageParam] || undefined;
+    if (languageParam != null) {
+      languageParam = String(languageParam).trim().toUpperCase();
+      languageParam = FILTER_LANGUAGE_MAP[languageParam] ?? (Object.values(FILTER_LANGUAGE_MAP).includes(languageParam) ? languageParam : undefined);
     }
 
     let genresParam = params.genres;
@@ -78,105 +78,97 @@ async function extractSearchResults(params = {}) {
 
     const queryParams = new URLSearchParams(filteredParams).toString();
 
-    const resp = await axios.get(`https://${v1_base_url}/search?${queryParams}`, {
+    let apiUrl = `https://${v1_base_url}/filter?${queryParams}`;
+
+    if (filteredParams.keyword) {
+      apiUrl = `https://${v1_base_url}/search?${queryParams}`;
+    }
+
+    const resp = await axios.get(apiUrl, {
       headers: {
         Accept:
-          "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+          "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+
         "Accept-Encoding": "gzip, deflate, br",
         "User-Agent": DEFAULT_HEADERS,
       },
     });
 
     const $ = cheerio.load(resp.data);
-    const elements = "#main-content .film_list-wrap .flw-item";
-
-    const totalPage =
-      Number(
-        $('.pre-pagination nav .pagination > .page-item a[title="Last"]')
-          ?.attr("href")
-          ?.split("=")
-          .pop() ??
-          $('.pre-pagination nav .pagination > .page-item a[title="Next"]')
-            ?.attr("href")
-            ?.split("=")
-            .pop() ??
-          $(".pre-pagination nav .pagination > .page-item.active a")
-            ?.text()
-            ?.trim()
-      ) || 1;
-
+    const elements = ".flw-item";
     const result = [];
+
     $(elements).each((_, el) => {
-      const id =
-        $(el)
-          .find(".film-detail .film-name .dynamic-name")
-          ?.attr("href")
-          ?.slice(1)
-          .split("?ref=search")[0] || null;
+      const $el = $(el);
+      const href = $el.find(".film-poster-ahref").attr("href");
+      const data_id = Number($el.find(".film-poster-ahref").attr("data-id"));
+
       result.push({
-        id: id,
-        title: $(el)
-          .find(".film-detail .film-name .dynamic-name")
-          ?.text()
-          ?.trim(),
-        japanese_title:
-          $(el)
-            .find(".film-detail .film-name .dynamic-name")
-            ?.attr("data-jname")
-            ?.trim() || null,
+        id: href ? href.slice(1) : null,
+        data_id: data_id ? `${data_id}` : null,
         poster:
-          $(el)
-            .find(".film-poster .film-poster-img")
-            ?.attr("data-src")
-            ?.trim() || null,
-        duration:
-          $(el)
-            .find(".film-detail .fd-infor .fdi-item.fdi-duration")
-            ?.text()
-            ?.trim(),
+          $el.find(".film-poster .film-poster-img").attr("data-src") ||
+          $el.find(".film-poster .film-poster-img").attr("src") ||
+          null,
+        title: $el.find(".film-name .dynamic-name").text().trim(),
+        japanese_title:
+          $el.find(".film-name .dynamic-name").attr("data-jname") || null,
         tvInfo: {
           showType:
-            $(el)
-              .find(".film-detail .fd-infor .fdi-item:nth-of-type(1)")
-              .text()
-              .trim() || "Unknown",
-          rating: $(el).find(".film-poster .tick-rate")?.text()?.trim() || null,
+            $el.find(".fd-infor .fdi-item:first-child").text().trim() ||
+            "Unknown",
+          duration: $el.find(".fd-infor .fdi-duration").text().trim() || null,
           sub:
             Number(
-              $(el)
-                .find(".film-poster .tick-sub")
-                ?.text()
-                ?.trim()
-                .split(" ")
-                .pop()
+              $el
+                .find(".tick-sub")
+                .text()
+                .replace(/[^0-9]/g, "")
             ) || null,
           dub:
             Number(
-              $(el)
-                .find(".film-poster .tick-dub")
-                ?.text()
-                ?.trim()
-                .split(" ")
-                .pop()
+              $el
+                .find(".tick-dub")
+                .text()
+                .replace(/[^0-9]/g, "")
             ) || null,
           eps:
             Number(
-              $(el)
-                .find(".film-poster .tick-eps")
-                ?.text()
-                ?.trim()
-                .split(" ")
-                .pop()
+              $el
+                .find(".tick-eps")
+                .text()
+                .replace(/[^0-9]/g, "")
             ) || null,
         },
+        adultContent: $el.find(".tick-rate").text().trim() || null,
       });
     });
 
-    return [parseInt(totalPage, 10), result.length > 0 ? result : []];
+    const totalPage = Number(
+      $('.pre-pagination nav .pagination > .page-item a[title="Last"]')
+        ?.attr("href")
+        ?.split("=")
+        .pop() ||
+        $('.pre-pagination nav .pagination > .page-item a[title="Next"]')
+          ?.attr("href")
+          ?.split("=")
+          .pop() ||
+        $(".pre-pagination nav .pagination > .page-item.active a")
+          ?.text()
+          ?.trim() ||
+        1
+    );
+
+    return [
+      parseInt(totalPage, 10),
+      result.length > 0 ? result : [],
+      parseInt(params.page, 10) || 1,
+      parseInt(params.page, 10) < parseInt(totalPage, 10),
+    ];
   } catch (e) {
-    console.error(e);
-    return e;
+    console.error("Error fetching data:", e);
+    throw e;
   }
 }
 
-export default extractSearchResults;
+export { extractFilterResults as default };

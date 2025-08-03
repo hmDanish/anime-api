@@ -1,60 +1,50 @@
-// this is kept as backup in case megacloud's architecture rollback to it's previous architecture
+import axios from "axios";
+import CryptoJS from "crypto-js";
+import { v1_base_url } from "../../utils/base_v1.js";
+import { fallback_1, fallback_2 } from "../../utils/fallback.js";
+import extractToken from "../../helper/token.helper.js";
 
+export async function decryptSources_v1(epID, id, name, type) {
+  try {
+    // const [{ data: sourcesData }, { data: key }] = await Promise.all([
+    //   axios.get(`https://${v1_base_url}/ajax/v2/episode/sources?id=${id}`),
+    //   axios.get("https://raw.githubusercontent.com/itzzzme/megacloud-keys/refs/heads/main/key.txt"),
+    // ]);
+    const { data: sourcesData } = await axios.get(
+      `https://${v1_base_url}/ajax/v2/episode/sources?id=${id}`,
+    );
+    const ajaxLink = sourcesData?.link;
+    if (!ajaxLink) throw new Error("Missing link in sourcesData");
 
-// import axios from "axios";
-// import CryptoJS from "crypto-js";
-// import { v1_base_url } from "../../utils/base_v1.js";
-// import fetchScript from "../../helper/fetchScript.helper.js";
-// import getKeys from "../../helper/getKey.helper.js";
-// import { PLAYER_SCRIPT_URL } from "../../configs/player_v1.config.js";
-// import { extractURL } from "./megacloud.decryptor.js";
+    const sourceIdMatch = /\/([^/?]+)\?/.exec(ajaxLink);
+    const sourceId = sourceIdMatch?.[1];
+    if (!sourceId) throw new Error("Unable to extract sourceId from link");
 
-// export async function decryptSources_v1(id, name, type) {
-//   try {
-//     const [{ data: sourcesData }, decryptKey_v1] = await Promise.all([
-//       axios.get(`https://${v1_base_url}/ajax/v2/episode/sources?id=${id}`),
-//       getKeys(await fetchScript(PLAYER_SCRIPT_URL)),
-//     ]);
-//     const ajaxResp = sourcesData.link;
-//     const [_, sourceId] = /\/([^\/\?]+)\?/.exec(ajaxResp) || [];
-//     const source = await extractURL(sourceId);
-//     const sourcesArray = source.sources.split("");
-//     let extractedKey = "";
-//     let currentIndex = 0;
+    const baseUrlMatch = ajaxLink.match(/^(https?:\/\/[^\/]+(?:\/[^\/]+){3})/);
+    if (!baseUrlMatch)
+      throw new Error("Could not extract base URL from ajaxLink");
+    const baseUrl = baseUrlMatch[1];
+    const iframeURL = `${baseUrl}/${sourceId}?k=1&autoPlay=0&oa=0&asi=1`;
 
-//     for (const index of decryptKey_v1) {
-//       const start = index[0] + currentIndex;
-//       const end = start + index[1];
-
-//       for (let i = start; i < end; i++) {
-//         extractedKey += sourcesArray[i];
-//         sourcesArray[i] = "";
-//       }
-//       currentIndex += index[1];
-//     }
-//     const decrypted = CryptoJS.AES.decrypt(
-//       sourcesArray.join(""),
-//       extractedKey
-//     ).toString(CryptoJS.enc.Utf8);
-//     const decryptedSources = JSON.parse(decrypted);
-//     source.sources = null;
-//     source.sources = {
-//       file: decryptedSources[0].file,
-//       type: "hls",
-//     };
-//     if (source.hasOwnProperty("server")) {
-//       delete source.server;
-//     }
-//     return {
-//       id: id,
-//       type: type,
-//       link: source.sources,
-//       tracks: source.tracks,
-//       intro: source.intro,
-//       outro: source.outro,
-//       server: name,
-//     };
-//   } catch (error) {
-//     console.error("Error during decryption:", error);
-//   }
-// }
+    const { data: rawSourceData } = await axios.get(
+      `https://decrypt.zenime.site/extract?embed_url=${iframeURL}`,
+    );
+    const decryptedSources = rawSourceData.data;
+    return {
+      id,
+      type,
+      link: {
+        file: decryptedSources?.sources[0]?.file ?? "",
+        type: "hls",
+      },
+      tracks: decryptedSources.tracks ?? [],
+      intro: decryptedSources.intro ?? null,
+      outro: decryptedSources.outro ?? null,
+      iframe: iframeURL,
+      server: name,
+    };
+  } catch (error) {
+    console.error(`Error during decryptSources_v1(${id}):`, error.message);
+    return null;
+  }
+}
