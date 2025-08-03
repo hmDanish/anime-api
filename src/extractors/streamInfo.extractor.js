@@ -32,7 +32,7 @@ export async function extractServers(id) {
   }
 }
 
-async function extractStreamingInfo(id, name, type) {
+async function extractStreamingInfo(id, name, type, input) {
   try {
     const servers = await extractServers(id.split("?ep=").pop());
     let requestedServer = servers.filter(
@@ -58,6 +58,35 @@ async function extractStreamingInfo(id, name, type) {
       name,
       type
     );
+
+    // const streamingLink = "null"
+
+    if (!streamingLink || streamingLink === "null") {
+      console.warn("⚠️ Primary decryption failed, using fallback stream API...");
+
+      const fallbackUrl = `https://vimal.shoko.fun/api/stream?id=${encodeURIComponent(
+        input
+      )}&server=${encodeURIComponent(name)}&type=${encodeURIComponent(type)}`;
+      
+      const fallbackResp = await axios.get(fallbackUrl);
+
+      let result = fallbackResp?.data?.results
+      const streamUrl = fallbackResp?.data?.results?.streamingLink?.link?.file;
+      console.log("🔄 Fallback streaming link:", streamUrl);
+
+       const PROXY_BASE = "http://64.23.163.208:8080";
+      //  const PROXY_BASE = "http://127.0.0.1:8080";
+
+       const proxyLink = `${PROXY_BASE}/m3u8-proxy?url=${encodeURIComponent(
+         streamUrl
+       )}`;
+      
+      result.streamingLink.link.file = proxyLink;  
+      
+      return result;
+    }
+      
+
     return { streamingLink, servers };
   } catch (error) {
     console.error("An error occurred:", error);

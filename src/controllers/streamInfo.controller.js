@@ -8,7 +8,7 @@ export const getStreamInfo = async (req) => {
     const match = input.match(/ep=(\d+)/);
     if (!match) throw new Error("Invalid URL format");
     const finalId = match[1];
-    const streamingInfo = await extractStreamingInfo(finalId, server, type);
+    const streamingInfo = await extractStreamingInfo(finalId, server, type, input);
     return streamingInfo;
   } catch (e) {
     console.error(e);

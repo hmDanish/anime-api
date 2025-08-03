@@ -37,6 +37,8 @@ const decryptURL = `https://decrypt.zenime.site/extract?embed_url=${encodeURICom
 
     const decryptedSources = await fetchDecryptedDataWithRetry(decryptURL);
 
+    
+
     // console.log("✅ decryptedSources received:", decryptedSources);
 
     const rawLink = decryptedSources?.sources?.[0]?.file;
@@ -45,23 +47,17 @@ const decryptURL = `https://decrypt.zenime.site/extract?embed_url=${encodeURICom
 
     console.log("🎞️ rawLink:", rawLink);
 
-    const headers = {
-      Referer: "https://megacloud.blog/",
-      "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36",
-    };
-
     const PROXY_BASE1 = "http://64.23.163.208:8080";
-    const PROXY_BASE2 = "https://tssm3u8proxy.me"
+    // const PROXY_BASE2 = "https://tssm3u8proxy.me"
 
     // const PROXY_BASE = "http://127.0.0.1:8080";
 
     const proxyLink1 = `${PROXY_BASE1}/m3u8-proxy?url=${encodeURIComponent(
       rawLink
     )}`;
-    const proxyLink2 = `${PROXY_BASE2}/m3u8-proxy?url=${encodeURIComponent(
-      rawLink
-    )}`;
+    // const proxyLink2 = `${PROXY_BASE2}/m3u8-proxy?url=${encodeURIComponent(
+    //   rawLink
+    // )}`;
 
 
     // console.log("🚀 Final proxyLink:", proxyLink);
@@ -71,7 +67,7 @@ const decryptURL = `https://decrypt.zenime.site/extract?embed_url=${encodeURICom
       type,
       link: {
         file: proxyLink1,
-        file2: proxyLink2,
+        // file2: proxyLink2,
         type: "hls",
       },
       tracks: decryptedSources?.tracks ?? [],
@@ -107,5 +103,7 @@ async function fetchDecryptedDataWithRetry(url, retries = 3, delay = 3000) {
     }
     await new Promise((res) => setTimeout(res, delay));
   }
-  throw new Error("🔥 Failed to get decrypted data after all retries");
+  // throw new Error("🔥 Failed to get decrypted data after all retries");
+  console.log("🔥 Failed to get decrypted data after all retries, trying alternate server...");
+  return null;  
 }
