@@ -30,7 +30,7 @@ export async function decryptSources_v1(epID, id, name, type) {
     iframeURL = `${baseUrl}/${sourceId}?k=1&autoPlay=0&oa=0&asi=1`;
     // console.log("🖼️ iframeURL:", iframeURL);
 
-const decryptURL = `https://decrypt.zenimex.site/extract?embed_url=${encodeURIComponent(
+const decryptURL = `https://decrypt.zenime.site/extract?embed_url=${encodeURIComponent(
   iframeURL
     )}`;
     // console.log("🔐 Calling decrypt API:", decryptURL);
