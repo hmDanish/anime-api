@@ -74,15 +74,16 @@ async function extractStreamingInfo(id, name, type, input) {
       const streamUrl = fallbackResp?.data?.results?.streamingLink?.link?.file;
       console.log("🔄 Fallback streaming link:", streamUrl);
 
-       const PROXY_BASE = "http://64.23.163.208:8080";
+      const PROXY_BASE = "https://tssm3u8proxy.me"
+      //  const PROXY_BASE = "http://64.23.163.208:8080";
       //  const PROXY_BASE = "http://127.0.0.1:8080";
 
        const proxyLink = `${PROXY_BASE}/m3u8-proxy?url=${encodeURIComponent(
          streamUrl
        )}`;
-      
-      result.streamingLink.link.file = proxyLink;  
-      
+
+      result.streamingLink.link.file = proxyLink;
+
       return result;
     }
       

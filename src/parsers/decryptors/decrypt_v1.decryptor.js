@@ -30,7 +30,7 @@ export async function decryptSources_v1(epID, id, name, type) {
     iframeURL = `${baseUrl}/${sourceId}?k=1&autoPlay=0&oa=0&asi=1`;
     // console.log("🖼️ iframeURL:", iframeURL);
 
-const decryptURL = `https://decrypt.zenime.site/extract?embed_url=${encodeURIComponent(
+const decryptURL = `https://decrypt.zenimex.site/extract?embed_url=${encodeURIComponent(
   iframeURL
     )}`;
     // console.log("🔐 Calling decrypt API:", decryptURL);
@@ -47,8 +47,8 @@ const decryptURL = `https://decrypt.zenime.site/extract?embed_url=${encodeURICom
 
     console.log("🎞️ rawLink:", rawLink);
 
-    const PROXY_BASE1 = "http://64.23.163.208:8080";
-    // const PROXY_BASE2 = "https://tssm3u8proxy.me"
+    // const PROXY_BASE1 = "http://64.23.163.208:8080";
+    const PROXY_BASE1 = "https://tssm3u8proxy.me"
 
     // const PROXY_BASE = "http://127.0.0.1:8080";
 
