@@ -45,29 +45,25 @@ const decryptURL = `https://decrypt.zenime.site/extract?embed_url=${encodeURICom
     if (!rawLink)
       throw new Error("❌ No HLS stream URL found in decrypted sources");
 
-    console.log("🎞️ rawLink:", rawLink);
+    // console.log("🎞️ rawLink:", rawLink);
 
     // const PROXY_BASE1 = "http://64.23.163.208:8080";
-    const PROXY_BASE1 = "https://tssm3u8proxy.me"
+    const PROXY_BASE = "https://tssm3u8proxy.me"
 
     // const PROXY_BASE = "http://127.0.0.1:8080";
 
-    const proxyLink1 = `${PROXY_BASE1}/m3u8-proxy?url=${encodeURIComponent(
+    const proxyLink = `${PROXY_BASE}/m3u8-proxy?url=${encodeURIComponent(
       rawLink
     )}`;
-    // const proxyLink2 = `${PROXY_BASE2}/m3u8-proxy?url=${encodeURIComponent(
-    //   rawLink
-    // )}`;
+   
 
 
-    // console.log("🚀 Final proxyLink:", proxyLink);
 
     return {
       id,
       type,
       link: {
-        file: proxyLink1,
-        // file2: proxyLink2,
+        file: rawLink,
         type: "hls",
       },
       tracks: decryptedSources?.tracks ?? [],
@@ -87,7 +83,7 @@ const decryptURL = `https://decrypt.zenime.site/extract?embed_url=${encodeURICom
   }
 }
 
-async function fetchDecryptedDataWithRetry(url, retries = 3, delay = 3000) {
+async function fetchDecryptedDataWithRetry(url, retries = 5, delay = 3000) {
   for (let i = 0; i < retries; i++) {
     try {
       // console.log(`🔁 Attempt ${i + 1} to fetch: ${url}`);
