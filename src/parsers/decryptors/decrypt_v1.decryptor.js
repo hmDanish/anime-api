@@ -46,8 +46,8 @@ export async function decryptSources_v1(epID, id, name, type) {
       id,
       type,
       link: {
-        file: proxyLink,
-        file2: rawLink,
+        file: rawLink,
+        // file: proxyLink,
         type: "hls",
       },
       tracks: decryptedSources.tracks ?? [],
