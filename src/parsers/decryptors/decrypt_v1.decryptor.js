@@ -31,11 +31,23 @@ export async function decryptSources_v1(epID, id, name, type) {
       `${baseUrl}/getSources?id=${sourceId}`,
     );
     const decryptedSources = rawSourceData;
+
+    const rawLink = decryptedSources?.sources[0]?.file ?? "";
+
+    const PROXY_BASE = "https://tssm3u8proxy.me"
+    // const PROXY_BASE = "http://127.0.0.1:8080";
+
+
+    const proxyLink = `${PROXY_BASE}/m3u8-proxy?url=${encodeURIComponent(
+      rawLink
+    )}`;
+
     return {
       id,
       type,
       link: {
-        file: decryptedSources?.sources[0]?.file ?? "",
+        file: proxyLink,
+        file2: rawLink,
         type: "hls",
       },
       tracks: decryptedSources.tracks ?? [],
