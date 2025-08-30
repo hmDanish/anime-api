@@ -11,7 +11,7 @@ export async function extractServers(id) {
       `https://${v1_base_url}/ajax/v2/episode/servers?episodeId=${id}`
     );
     const $ = cheerio.load(resp.data.html);
-    const serverData = [];
+    let serverData = [];
     $(".server-item").each((index, element) => {
       const data_id = $(element).attr("data-id");
       const server_id = $(element).attr("data-server-id");
@@ -25,6 +25,14 @@ export async function extractServers(id) {
         serverName,
       });
     });
+
+    // Reorder: put "HD-2" first if it exists
+    serverData = serverData.sort((a, b) => {
+      if (a.serverName === "HD-2") return -1; // a goes first
+      if (b.serverName === "HD-2") return 1;  // b goes first
+      return 0; // keep original order otherwise
+    });
+
     return serverData;
   } catch (error) {
     console.log(error);
