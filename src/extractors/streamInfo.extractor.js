@@ -33,6 +33,8 @@ export async function extractServers(id) {
       return 0; // keep original order otherwise
     });
 
+    serverData.reverse();
+
     return serverData;
   } catch (error) {
     console.log(error);
